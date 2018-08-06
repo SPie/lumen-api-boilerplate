@@ -23,7 +23,8 @@ class Version00000000000000 extends AbstractMigration
     public function up(Schema $schema)
     {
         $this
-            ->createUsersTable($schema);
+            ->createUsersTable($schema)
+            ->createRefreshTokensTable($schema);
     }
 
     /**
@@ -40,6 +41,26 @@ class Version00000000000000 extends AbstractMigration
             $table->string('password');
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        return $this;
+    }
+
+    /**
+     * @param Schema $schema
+     *
+     * @return $this
+     */
+    private function createRefreshTokensTable(Schema $schema)
+    {
+        (new Builder($schema))->create('login_refresh_tokens', function (Table $table) {
+            $table->increments('id');
+            $table->string('token');
+            $table->unique('token');
+            $table->dateTime('disabled_at')->setNotnull(false);
+            $table->integer('user_id', false, true);
+            $table->foreign('users', 'user_id');
+            $table->timestamps();
         });
 
         return $this;

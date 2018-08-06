@@ -3,6 +3,8 @@
 namespace App\Models\User;
 
 use App\Exceptions\InvalidParameterException;
+use App\Models\Auth\LoginRefreshTokenModelFactoryInterface;
+use App\Models\Auth\LoginRefreshTokenModelInterface;
 use App\Models\ModelInterface;
 use App\Models\ModelParameterValidation;
 
@@ -17,6 +19,32 @@ class UserDoctrineModelFactory implements UserModelFactoryInterface
     use ModelParameterValidation;
 
     /**
+     * @var LoginRefreshTokenModelFactoryInterface
+     */
+    private $loginRefreshTokenFactory;
+
+    /**
+     * @param LoginRefreshTokenModelFactoryInterface $loginRefreshTokenModelFactory
+     *
+     * @return UserModelFactoryInterface
+     */
+    public function setLoginRefreshTokenModelFactory(
+        LoginRefreshTokenModelFactoryInterface $loginRefreshTokenModelFactory
+    ): UserModelFactoryInterface
+    {
+        $this->loginRefreshTokenFactory = $loginRefreshTokenModelFactory;
+
+        return $this;
+    }
+
+    /**
+     * @return LoginRefreshTokenModelFactoryInterface
+     */
+    protected function getLoginRefreshTokenModelFactory(): LoginRefreshTokenModelFactoryInterface
+    {
+        return $this->loginRefreshTokenFactory;
+    }
+    /**
      * @param array $data
      *
      * @return ModelInterface
@@ -30,6 +58,7 @@ class UserDoctrineModelFactory implements UserModelFactoryInterface
             $this->validateStringParameter($data,UserModelInterface::PROPERTY_PASSWORD)
         ))
             ->setId($this->validateIntegerParameter($data, UserModelInterface::PROPERTY_ID, false))
+            ->setLoginRefreshTokens($this->validateLoginRefreshTokenModels($data))
             ->setCreatedAt($this->validateDateTimeParameter(
                 $data,
                 UserModelInterface::PROPERTY_CREATED_AT,
@@ -103,6 +132,41 @@ class UserDoctrineModelFactory implements UserModelFactoryInterface
             $model->setDeletedAt($deletedAt);
         }
 
+        $model->setLoginRefreshTokens($this->validateLoginRefreshTokenModels($data));
+
         return $model;
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return UserModelInterface[]
+     *
+     * @throws InvalidParameterException
+     */
+    protected function validateLoginRefreshTokenModels(array $data): array
+    {
+        $refreshTokens = $this->validateArrayParameter(
+            $data,
+            UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS,
+            false
+        );
+
+        return \is_array($refreshTokens)
+            ? \array_map(
+                function ($refreshToken) {
+                    if ($refreshToken instanceof LoginRefreshTokenModelInterface) {
+                        return $refreshToken;
+                    }
+
+                    if (!\is_array($refreshToken)) {
+                        throw new InvalidParameterException('RefreshLoginToken data has to be array.');
+                    }
+
+                    return $this->getLoginRefreshTokenModelFactory()->create($refreshToken);
+                },
+                $refreshTokens
+            )
+            : [];
     }
 }

@@ -4,7 +4,9 @@ use App\Exceptions\InvalidParameterException;
 use App\Models\User\UserModelFactoryInterface;
 use App\Models\User\UserModelInterface;
 use Illuminate\Support\Facades\Hash;
+use Test\AuthHelper;
 use Test\DatabaseMigrations;
+use Test\ModelHelper;
 use Test\UserHelper;
 
 /**
@@ -13,7 +15,9 @@ use Test\UserHelper;
 class UserDoctrineModelFactoryTest extends TestCase
 {
 
+    use AuthHelper;
     use DatabaseMigrations;
+    use ModelHelper;
     use UserHelper;
 
     //region Tests
@@ -24,12 +28,13 @@ class UserDoctrineModelFactoryTest extends TestCase
     public function testCreate(): void
     {
         $data = [
-            UserModelInterface::PROPERTY_EMAIL      => $this->getFaker()->safeEmail,
-            UserModelInterface::PROPERTY_PASSWORD   => $this->getFaker()->password(),
-            UserModelInterface::PROPERTY_ID         => $this->getFaker()->numberBetween(),
-            UserModelInterface::PROPERTY_CREATED_AT => $this->getFaker()->dateTime(),
-            UserModelInterface::PROPERTY_UPDATED_AT => $this->getFaker()->dateTime(),
-            UserModelInterface::PROPERTY_DELETED_AT => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+            UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+            UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+            UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $this->createLoginRefreshTokens()->all(),
         ];
 
         /** @var UserModelInterface $user */
@@ -41,6 +46,10 @@ class UserDoctrineModelFactoryTest extends TestCase
         $this->assertEquals($data[UserModelInterface::PROPERTY_CREATED_AT], $user->getCreatedAt());
         $this->assertEquals($data[UserModelInterface::PROPERTY_UPDATED_AT], $user->getUpdatedAt());
         $this->assertEquals($data[UserModelInterface::PROPERTY_DELETED_AT], $user->getDeletedAt());
+        $this->assertEquals(
+            $data[UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS],
+            $user->getLoginRefreshTokens()->all()
+        );
     }
 
     /**
@@ -65,16 +74,18 @@ class UserDoctrineModelFactoryTest extends TestCase
      */
     public function testCreateWithInvalidParameters(): void
     {
+        $loginRefreshTokens = $this->createLoginRefreshTokens()->all();
+
         //no email
         try {
-            $this->getUserModelFactory()
-                ->create([
-                    UserModelInterface::PROPERTY_PASSWORD   => $this->getFaker()->password(),
-                    UserModelInterface::PROPERTY_ID         => $this->getFaker()->numberBetween(),
-                    UserModelInterface::PROPERTY_CREATED_AT => $this->getFaker()->dateTime(),
-                    UserModelInterface::PROPERTY_UPDATED_AT => $this->getFaker()->dateTime(),
-                    UserModelInterface::PROPERTY_DELETED_AT => $this->getFaker()->dateTime(),
-                ]);
+            $this->getUserModelFactory()->create([
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
+            ]);
 
             $this->assertTrue(false);
         } catch (InvalidParameterException $e) {
@@ -84,13 +95,14 @@ class UserDoctrineModelFactoryTest extends TestCase
         //empty email
         try {
             $this->getUserModelFactory()->create([
-                    UserModelInterface::PROPERTY_EMAIL      => '',
-                    UserModelInterface::PROPERTY_PASSWORD   => $this->getFaker()->password(),
-                    UserModelInterface::PROPERTY_ID         => $this->getFaker()->numberBetween(),
-                    UserModelInterface::PROPERTY_CREATED_AT => $this->getFaker()->dateTime(),
-                    UserModelInterface::PROPERTY_UPDATED_AT => $this->getFaker()->dateTime(),
-                    UserModelInterface::PROPERTY_DELETED_AT => $this->getFaker()->dateTime(),
-                ]);
+                UserModelInterface::PROPERTY_EMAIL                => '',
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
+            ]);
 
             $this->assertTrue(false);
         } catch (InvalidParameterException $e) {
@@ -100,12 +112,13 @@ class UserDoctrineModelFactoryTest extends TestCase
         //empty password
         try {
             $this->getUserModelFactory()->create([
-                UserModelInterface::PROPERTY_EMAIL      => $this->getFaker()->safeEmail,
-                UserModelInterface::PROPERTY_PASSWORD   => '',
-                UserModelInterface::PROPERTY_ID         => $this->getFaker()->numberBetween(),
-                UserModelInterface::PROPERTY_CREATED_AT => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_UPDATED_AT => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_DELETED_AT => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+                UserModelInterface::PROPERTY_PASSWORD             => '',
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
             ]);
 
             $this->assertTrue(false);
@@ -116,12 +129,13 @@ class UserDoctrineModelFactoryTest extends TestCase
         //invalid id
         try {
             $this->getUserModelFactory()->create([
-                UserModelInterface::PROPERTY_EMAIL        => $this->getFaker()->safeEmail,
-                UserModelInterface::PROPERTY_PASSWORD     => $this->getFaker()->password(),
-                UserModelInterface::PROPERTY_ID           => $this->getFaker()->word,
-                UserModelInterface::PROPERTY_CREATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_UPDATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_DELETED_AT   => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->word,
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
             ]);
 
             $this->assertTrue(false);
@@ -132,12 +146,13 @@ class UserDoctrineModelFactoryTest extends TestCase
         //invalid created at
         try {
             $this->getUserModelFactory()->create([
-                UserModelInterface::PROPERTY_EMAIL        => $this->getFaker()->safeEmail,
-                UserModelInterface::PROPERTY_PASSWORD     => $this->getFaker()->password(),
-                UserModelInterface::PROPERTY_ID           => $this->getFaker()->numberBetween(),
-                UserModelInterface::PROPERTY_CREATED_AT   => $this->getFaker()->word,
-                UserModelInterface::PROPERTY_UPDATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_DELETED_AT   => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->word,
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
             ]);
 
             $this->assertTrue(false);
@@ -148,12 +163,13 @@ class UserDoctrineModelFactoryTest extends TestCase
         //invalid updated at
         try {
             $this->getUserModelFactory()->create([
-                UserModelInterface::PROPERTY_EMAIL        => $this->getFaker()->safeEmail,
-                UserModelInterface::PROPERTY_PASSWORD     => $this->getFaker()->password(),
-                UserModelInterface::PROPERTY_ID           => $this->getFaker()->numberBetween(),
-                UserModelInterface::PROPERTY_CREATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_UPDATED_AT   => $this->getFaker()->word,
-                UserModelInterface::PROPERTY_DELETED_AT   => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->word,
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
             ]);
 
             $this->assertTrue(false);
@@ -164,12 +180,13 @@ class UserDoctrineModelFactoryTest extends TestCase
         //invalid deleted at
         try {
             $this->getUserModelFactory()->create([
-                UserModelInterface::PROPERTY_EMAIL        => $this->getFaker()->safeEmail,
-                UserModelInterface::PROPERTY_PASSWORD     => $this->getFaker()->password(),
-                UserModelInterface::PROPERTY_ID           => $this->getFaker()->numberBetween(),
-                UserModelInterface::PROPERTY_CREATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_UPDATED_AT   => $this->getFaker()->dateTime(),
-                UserModelInterface::PROPERTY_DELETED_AT   => $this->getFaker()->word,
+                UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+                UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+                UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+                UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+                UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->word,
+                UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $loginRefreshTokens,
             ]);
 
             $this->assertTrue(false);
@@ -184,12 +201,13 @@ class UserDoctrineModelFactoryTest extends TestCase
     public function testFill(): void
     {
         $data = [
-            UserModelInterface::PROPERTY_EMAIL      => $this->getFaker()->safeEmail,
-            UserModelInterface::PROPERTY_PASSWORD   => $this->getFaker()->password(),
-            UserModelInterface::PROPERTY_ID         => $this->getFaker()->numberBetween(),
-            UserModelInterface::PROPERTY_CREATED_AT => $this->getFaker()->dateTime(),
-            UserModelInterface::PROPERTY_UPDATED_AT => $this->getFaker()->dateTime(),
-            UserModelInterface::PROPERTY_DELETED_AT => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_EMAIL                => $this->getFaker()->safeEmail,
+            UserModelInterface::PROPERTY_PASSWORD             => $this->getFaker()->password(),
+            UserModelInterface::PROPERTY_ID                   => $this->getFaker()->numberBetween(),
+            UserModelInterface::PROPERTY_CREATED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_UPDATED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_DELETED_AT           => $this->getFaker()->dateTime(),
+            UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS => $this->createLoginRefreshTokens()->all(),
         ];
 
         /** @var UserModelInterface $user */
@@ -201,6 +219,10 @@ class UserDoctrineModelFactoryTest extends TestCase
         $this->assertEquals($data[UserModelInterface::PROPERTY_CREATED_AT], $user->getCreatedAt());
         $this->assertEquals($data[UserModelInterface::PROPERTY_UPDATED_AT], $user->getUpdatedAt());
         $this->assertEquals($data[UserModelInterface::PROPERTY_DELETED_AT], $user->getDeletedAt());
+        $this->assertEquals(
+            $data[UserModelInterface::PROPERTY_LOGIN_REFRESH_TOKENS],
+            $user->getLoginRefreshTokens()->all()
+        );
     }
 
     //endregion

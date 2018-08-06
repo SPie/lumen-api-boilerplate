@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Test\ApiHelper;
 use Test\DatabaseMigrations;
+use Test\ModelHelper;
 use Test\ResponseHelper;
 use Test\UserHelper;
 
@@ -17,6 +18,7 @@ class UsersApiCallsTest extends TestCase
 
     use ApiHelper;
     use DatabaseMigrations;
+    use ModelHelper;
     use ResponseHelper;
     use UserHelper;
 

@@ -10,6 +10,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Test\DatabaseMigrations;
+use Test\ModelHelper;
 use Test\UserHelper;
 
 /**
@@ -19,6 +20,7 @@ class UsersServiceTest extends TestCase
 {
 
     use DatabaseMigrations;
+    use ModelHelper;
     use UserHelper;
 
     //region Tests

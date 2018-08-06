@@ -2,10 +2,12 @@
 
 namespace App\Models\User;
 
+use App\Models\Auth\LoginRefreshTokenModelInterface;
 use App\Models\ModelInterface;
 use App\Models\SoftDeletable;
 use App\Models\Timestampable;
 use App\Services\JWT\JWTAuthenticatable;
+use Illuminate\Support\Collection;
 
 /**
  * Interface UserModelInterface
@@ -17,6 +19,7 @@ interface UserModelInterface extends ModelInterface, Timestampable, SoftDeletabl
 
     const PROPERTY_EMAIL    = 'email';
     const PROPERTY_PASSWORD = 'password';
+    const PROPERTY_LOGIN_REFRESH_TOKENS = 'loginRefreshTokens';
 
     /**
      * @param string $email
@@ -36,4 +39,23 @@ interface UserModelInterface extends ModelInterface, Timestampable, SoftDeletabl
      * @return $this
      */
     public function setPassword(string $password);
+
+    /**
+     * @param LoginRefreshTokenModelInterface[] $loginRefreshTokens
+     *
+     * @return UserModelInterface
+     */
+    public function setLoginRefreshTokens(array $loginRefreshTokens): UserModelInterface;
+
+    /**
+     * @param LoginRefreshTokenModelInterface $loginRefreshToken
+     *
+     * @return UserModelInterface
+     */
+    public function addLoginRefreshToken(LoginRefreshTokenModelInterface $loginRefreshToken): UserModelInterface;
+
+    /**
+     * @return LoginRefreshTokenModelInterface[]|Collection
+     */
+    public function getLoginRefreshTokens(): Collection;
 }

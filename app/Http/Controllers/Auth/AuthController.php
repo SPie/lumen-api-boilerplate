@@ -11,6 +11,7 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Cookie;
 
 /**
@@ -72,6 +73,9 @@ class AuthController extends Controller
      * @param UsersServiceInterface $usersService
      *
      * @return JsonResponse
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
      */
     public function login(Request $request, UsersServiceInterface $usersService): JsonResponse
     {
@@ -88,14 +92,15 @@ class AuthController extends Controller
             $credentials[UserModelInterface::PROPERTY_EMAIL],
             $credentials[UserModelInterface::PROPERTY_PASSWORD]
         );
-        $user->setJWTObject($this->getJwtService()->createToken($user));
+
+        $jwtObject = $this->getJwtService()->createToken($user);
 
         $this->getGuard()->setUser($user);
 
         return $this->createResponse([], Response::HTTP_NO_CONTENT)->withCookie(new Cookie(
             JWTServiceInterface::AUTHORIZATION_BEARER,
-            $user->getJWTObject()->getToken(),
-            $user->getJWTObject()->getExpiresAt()
+            $jwtObject->getToken(),
+            $jwtObject->getExpiresAt()
         ));
     }
 

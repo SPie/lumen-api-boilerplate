@@ -1,10 +1,14 @@
 <?php
 
+use App\Services\Auth\LoginRefreshTokenServiceInterface;
 use App\Services\JWT\JWTService;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Cache;
+use Test\AuthHelper;
 use Test\DatabaseMigrations;
+use Test\ModelHelper;
+use Test\TestJWTService\TestJWTService;
 use Test\UserHelper;
 
 /**
@@ -13,13 +17,17 @@ use Test\UserHelper;
 class JWTServiceTest extends TestCase
 {
 
+    use AuthHelper;
     use DatabaseMigrations;
+    use ModelHelper;
     use UserHelper;
 
     //region Tests
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testCreateToken(): void
     {
@@ -32,6 +40,8 @@ class JWTServiceTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testRefreshToken(): void
     {
@@ -41,31 +51,18 @@ class JWTServiceTest extends TestCase
 
         $oldJwtObject = $jwtService->createToken($user);
 
-        $jwtObject = $jwtService->refreshAuthToken($user->setJWTObject($oldJwtObject));
+        $jwtObject = $jwtService->refreshAuthToken($user->setUsedJWTRefreshToken($oldJwtObject->getRefreshToken()));
 
         $this->assertNotEmpty($jwtObject->getExpiresAt());
         $this->assertNotEmpty($jwtObject->getToken());
         $this->assertNotEquals($oldJwtObject->getToken(), $jwtObject->getToken());
         $this->assertEquals(3, \count(\explode('.', $jwtObject->getToken())));
-        $this->assertNotEmpty(Cache::get(\md5($oldJwtObject->getToken())));
     }
 
     /**
      * @return void
-     */
-    public function testRefreshTokenWithoutOldToken(): void
-    {
-        try {
-            $this->createJWTService()->refreshAuthToken($this->createUsers()->first());
-
-            $this->assertTrue(false);
-        } catch (AuthorizationException $e) {
-            $this->assertTrue(true);
-        }
-    }
-
-    /**
-     * @return void
+     *
+     * @throws Exception
      */
     public function testGetAuthenticated(): void
     {
@@ -75,7 +72,7 @@ class JWTServiceTest extends TestCase
         $token = $jwtService->createToken($user);
 
         $this->assertEquals(
-            $user->setJWTObject($token),
+            $user->setUsedJWTRefreshToken($token->getRefreshToken()),
             $jwtService->getAuthenticatedUser($token->getToken(), $this->getUserService())
         );
     }
@@ -92,6 +89,8 @@ class JWTServiceTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testGetAuthenticatedWithoutUser(): void
     {
@@ -108,21 +107,56 @@ class JWTServiceTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
-    public function testGetAuthenticatedWithBlacklistedToken(): void
+    public function testGetAuthenticatedWithRefreshedToken(): void
     {
-        $jwtService = $this->createJWTService();
+        $jwtService = $this->createJWTService()->setExpiredTimeStamps(true);
 
         $token = $jwtService->createToken($this->createUsers()->first());
 
-        Cache::add(\md5($token->getToken()), $token->getToken(), 1);
-
-        $this->assertEmpty($jwtService->getAuthenticatedUser($token->getToken(), $this->getUserService()));
-
+        $this->assertNotEmpty($jwtService->getAuthenticatedUser($token->getToken(), $this->getUserService()));
     }
 
     /**
      * @return void
+     *
+     * @throws Exception
+     */
+    public function testGetAuthenticatedWithBlacklistedToken(): void
+    {
+        $jwtService = $this->createJWTService()->setExpiredTimeStamps(true);
+
+        $token = $jwtService->createToken($this->createUsers()->first());
+
+        $this->getLoginRefreshTokenRepository()->save(
+            $this->getLoginRefreshTokenRepository()->findOneByToken(
+                $token->getRefreshToken())->setDisabledAt(new \DateTime()
+            )
+        );
+
+        $this->assertEmpty($jwtService->getAuthenticatedUser($token->getToken(), $this->getUserService()));
+    }
+
+    /**
+     * @return void
+     *
+     * @throws Exception
+     */
+    public function testGetAuthenticatedWithoutRefreshToken(): void
+    {
+        $jwtService = $this->createJWTService()->setExpiredTimeStamps(true);
+
+        $token = $jwtService->createToken($this->createUsers()->first(), false);
+
+        $this->assertEmpty($jwtService->getAuthenticatedUser($token->getToken(), $this->getUserService()));
+    }
+
+    /**
+     * @return void
+     *
+     * @throws Exception
      */
     public function testDeauthenticate(): void
     {
@@ -132,24 +166,12 @@ class JWTServiceTest extends TestCase
 
         $token = $jwtService->createToken($user);
 
-        $user->setJWTObject($token);
+        $user->setUsedJWTRefreshToken($token->getRefreshToken());
 
-        $this->assertEmpty($jwtService->deauthenticate($user)->getJWTObject());
-        $this->assertNotEmpty(Cache::get(\md5($token->getToken())));
-    }
-
-    /**
-     * @return void
-     */
-    public function testDeauthenticateWithoutToken(): void
-    {
-        try {
-            $this->createJWTService()->deauthenticate($this->createUsers()->first());
-
-            $this->assertTrue(false);
-        } catch (AuthorizationException $e) {
-            $this->assertTrue(true);
-        }
+        $this->assertEmpty($jwtService->deauthenticate($user)->getUsedJWTRefreshToken());
+        $this->assertNotEmpty(
+            $this->getLoginRefreshTokenRepository()->findOneByToken($token->getRefreshToken())->getDisabledAt()
+        );
     }
 
     //endregion
@@ -159,15 +181,16 @@ class JWTServiceTest extends TestCase
      * @param string|null $secret
      * @param int         $expiryHours
      *
-     * @return JWTServiceInterface
+     * @return TestJWTService
      */
     private function createJWTService(
         string $issuer = null,
         string $secret = null,
         int $expiryHours = 1
-    ): JWTServiceInterface
+    ): TestJWTService
     {
-        return new JWTService(
+        return new TestJWTService(
+            $this->app->get(LoginRefreshTokenServiceInterface::class),
             $issuer ?: $this->getFaker()->uuid,
             $secret ?: $this->getFaker()->password(),
             $expiryHours

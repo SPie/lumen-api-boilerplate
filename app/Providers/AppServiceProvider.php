@@ -2,11 +2,18 @@
 
 namespace App\Providers;
 
+use App\Models\Auth\LoginRefreshTokenDoctrineModel;
+use App\Models\Auth\LoginRefreshTokenDoctrineModelFactory;
+use App\Models\Auth\LoginRefreshTokenModelFactoryInterface;
+use App\Models\Auth\LoginRefreshTokenModelInterface;
 use App\Models\User\UserDoctrineModel;
 use App\Models\User\UserDoctrineModelFactory;
 use App\Models\User\UserModelFactoryInterface;
 use App\Models\User\UserModelInterface;
+use App\Repositories\Auth\LoginRefreshTokenRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
+use App\Services\Auth\LoginRefreshTokenService;
+use App\Services\Auth\LoginRefreshTokenServiceInterface;
 use App\Services\JWT\JWTService;
 use App\Services\JWT\JWTServiceInterface;
 use App\Services\User\UsersService;
@@ -44,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
     private function registerModels()
     {
         $this->app->bind(UserModelInterface::class, UserDoctrineModel::class);
+        $this->app->bind(LoginRefreshTokenModelInterface::class, LoginRefreshTokenDoctrineModel::class);
 
         return $this;
     }
@@ -60,6 +68,10 @@ class AppServiceProvider extends ServiceProvider
             return $entityManager->getRepository(UserDoctrineModel::class);
         });
 
+        $this->app->singleton(LoginRefreshTokenRepositoryInterface::class, function () use ($entityManager) {
+            return $entityManager->getRepository(LoginRefreshTokenDoctrineModel::class);
+        });
+
         return $this;
     }
 
@@ -69,7 +81,10 @@ class AppServiceProvider extends ServiceProvider
     private function registerModelFactories()
     {
         $this->app->singleton(UserModelFactoryInterface::class, UserDoctrineModelFactory::class);
-
+        $this->app->singleton(
+            LoginRefreshTokenModelFactoryInterface::class,
+            LoginRefreshTokenDoctrineModelFactory::class
+        );
         return $this;
     }
 
@@ -80,18 +95,41 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(JWTServiceInterface::class, function () {
             return new JWTService(
+                $this->app->get(LoginRefreshTokenServiceInterface::class),
                 $this->app['config']['services.jwt.issuer'],
                 $this->app['config']['services.jwt.secret'],
                 $this->app['config']['services.jwt.expiryHours']
             );
         });
 
-        $this->app->singleton(UsersServiceInterface::class, function () {
-            return new UsersService(
-                $this->app->get(UserRepositoryInterface::class),
-                $this->app->get(UserModelFactoryInterface::class)
-            );
-        });
+        $this->app->singleton(UsersServiceInterface::class, UsersService::class);
+        $this->app->singleton(LoginRefreshTokenServiceInterface::class, LoginRefreshTokenService::class);
+
+        return $this;
+    }
+
+    //endregion
+
+    //region Boot services
+
+    /**
+     * @return void
+     */
+    public function boot()
+    {
+        $this->bootModelFactories();
+    }
+
+    /**
+     * @return AppServiceProvider
+     */
+    private function bootModelFactories(): AppServiceProvider
+    {
+        $userModelFactory = $this->app->get(UserModelFactoryInterface::class);
+        $loginRefreshTokenFactory = $this->app->get(LoginRefreshTokenModelFactoryInterface::class);
+
+        $userModelFactory->setLoginRefreshTokenModelFactory($loginRefreshTokenFactory);
+        $loginRefreshTokenFactory->setUserModelFactory($userModelFactory);
 
         return $this;
     }
