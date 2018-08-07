@@ -23,14 +23,14 @@ interface JWTAuthenticatable extends Authenticatable
     public function getCustomClaims(): array;
 
     /**
-     * @param JWTObject|null $jwtObject
+     * @param null|string $jwtRefreshToken
      *
      * @return $this
      */
-    public function setJWTObject(?JWTObject $jwtObject);
+    public function setUsedJWTRefreshToken(?string $jwtRefreshToken);
 
     /**
-     * @return JWTObject|null
+     * @return string|null
      */
-    public function getJWTObject(): ?JWTObject;
+    public function getUsedJWTRefreshToken(): ?string;
 }

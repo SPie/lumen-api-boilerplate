@@ -3,11 +3,14 @@
 namespace App\Models\User;
 
 use App\Models\AbstractDoctrineModel;
+use App\Models\Auth\LoginRefreshTokenModelInterface;
 use App\Models\Authenticate;
 use App\Models\SoftDelete;
 use App\Models\Timestamps;
 use App\Services\JWT\JWTObject;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -32,21 +35,32 @@ class UserDoctrineModel extends AbstractDoctrineModel implements UserModelInterf
      */
     private $email;
 
+
     /**
-     * @var JWTObject|null
+     * @ORM\OneToMany(targetEntity="App\Models\Auth\LoginRefreshTokenDoctrineModel", mappedBy="user", cascade={"persist"})
+     *
+     * @var LoginRefreshTokenModelInterface[]|ArrayCollection
      */
-    private $jwtObject;
+    private $loginRefreshTokens;
+
+    /**
+     * @var string|null
+     */
+    private $usedJwtRefreshToken;
 
     /**
      * UserDoctrineModel constructor.
      *
-     * @param string $email
-     * @param string $password
+     * @param string                            $email
+     * @param string                            $password
+     * @param LoginRefreshTokenModelInterface[] $loginRefreshTokens
      */
-    public function __construct(string $email, string $password)
+    public function __construct(string $email, string $password, array $loginRefreshTokens = [])
     {
         $this->email = $email;
         $this->password = Hash::make($password);
+        $this->loginRefreshTokens = new ArrayCollection($loginRefreshTokens);
+        $this->usedJwtRefreshToken = null;
     }
 
     /**
@@ -70,6 +84,40 @@ class UserDoctrineModel extends AbstractDoctrineModel implements UserModelInterf
     }
 
     /**
+     * @param LoginRefreshTokenModelInterface[] $loginRefreshTokens
+     *
+     * @return UserModelInterface
+     */
+    public function setLoginRefreshTokens(array $loginRefreshTokens): UserModelInterface
+    {
+        $this->loginRefreshTokens = new ArrayCollection($loginRefreshTokens);
+
+        return $this;
+    }
+
+    /**
+     * @param LoginRefreshTokenModelInterface $loginRefreshToken
+     *
+     * @return UserModelInterface
+     */
+    public function addLoginRefreshToken(LoginRefreshTokenModelInterface $loginRefreshToken): UserModelInterface
+    {
+        if (!$this->loginRefreshTokens->contains($loginRefreshToken)) {
+            $this->loginRefreshTokens->add($loginRefreshToken);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return LoginRefreshTokenModelInterface[]|Collection
+     */
+    public function getLoginRefreshTokens(): Collection
+    {
+        return new Collection($this->loginRefreshTokens->toArray());
+    }
+
+    /**
      * @return int
      */
     public function getJWTIdentifier(): int
@@ -88,23 +136,23 @@ class UserDoctrineModel extends AbstractDoctrineModel implements UserModelInterf
     }
 
     /**
-     * @param JWTObject|null $jwtObject
+     * @param null|string $jwtRefreshToken
      *
      * @return $this
      */
-    public function setJWTObject(?JWTObject $jwtObject)
+    public function setUsedJWTRefreshToken(?string $jwtRefreshToken)
     {
-        $this->jwtObject = $jwtObject;
+        $this->usedJwtRefreshToken = $jwtRefreshToken;
 
         return $this;
     }
 
     /**
-     * @return JWTObject|null
+     * @return string|null
      */
-    public function getJWTObject(): ?JWTObject
+    public function getUsedJWTRefreshToken(): ?string
     {
-        return $this->jwtObject;
+        return $this->usedJwtRefreshToken;
     }
 
     /**

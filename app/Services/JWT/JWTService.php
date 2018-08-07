@@ -3,12 +3,11 @@
 namespace App\Services\JWT;
 
 use App\Exceptions\ModelNotFoundException;
-use App\Repositories\User\UserRepositoryInterface;
+use App\Models\User\UserModelInterface;
+use App\Services\Auth\LoginRefreshTokenServiceInterface;
 use App\Services\User\UsersServiceInterface;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Class JWTService
@@ -23,6 +22,12 @@ class JWTService implements JWTServiceInterface
     const PAYLOAD_PARAMETER_EXPIRES_AT = 'exp';
     const PAYLOAD_PARAMETER_SUBJECT    = 'sub';
     const PAYLOAD_PARAMETER_RANDOM     = 'rnd';
+    const PAYLOAD_PARAMETER_REFRESH    = 'refresh';
+
+    /**
+     * @var LoginRefreshTokenServiceInterface
+     */
+    private $loginRefreshTokenService;
 
     /**
      * @var string
@@ -49,19 +54,30 @@ class JWTService implements JWTServiceInterface
     /**
      * JWTService constructor.
      *
-     * @param string                  $issuer
-     * @param string                  $secret
-     * @param int                     $expiryHours
+     * @param LoginRefreshTokenServiceInterface $loginRefreshTokenService
+     * @param string                            $issuer
+     * @param string                            $secret
+     * @param int                               $expiryHours
      */
     public function __construct(
+        LoginRefreshTokenServiceInterface $loginRefreshTokenService,
         string $issuer,
         string $secret,
         int $expiryHours = 1
     )
     {
+        $this->loginRefreshTokenService = $loginRefreshTokenService;
         $this->issuer = $issuer;
         $this->secret = $secret;
         $this->expiryHours = $expiryHours;
+    }
+
+    /**
+     * @return LoginRefreshTokenServiceInterface
+     */
+    protected function getLoginRefreshTokenService(): LoginRefreshTokenServiceInterface
+    {
+        return $this->loginRefreshTokenService;
     }
 
     /**
@@ -98,16 +114,20 @@ class JWTService implements JWTServiceInterface
 
     /**
      * @param JWTAuthenticatable $user
+     * @param bool               $withRefreshToken
      *
      * @return JWTObject
      *
      * @throws \Exception
      */
-    public function createToken(JWTAuthenticatable $user): JWTObject
+    public function createToken(JWTAuthenticatable $user, bool $withRefreshToken = true): JWTObject
     {
-        list($issuedAt, $expiresAt) = $this->createTimestamps();
-
-        return new JWTObject($this->createJwt($user, $issuedAt, $expiresAt), $expiresAt);
+        return $this->createJwtObject(
+            $user,
+            $withRefreshToken
+                ? $this->createRefreshJwt($user)
+                : null
+        );
     }
 
     /**
@@ -115,54 +135,48 @@ class JWTService implements JWTServiceInterface
      *
      * @return JWTObject
      *
-     * @throws AuthorizationException
      * @throws \Exception
      */
     public function refreshAuthToken(JWTAuthenticatable $user): JWTObject
     {
-        if (!$user->getJWTObject()) {
-            throw new AuthorizationException();
-        }
-
-        //store blacklisted token in cache
-        Cache::add(
-            \md5($user->getJWTObject()->getToken()),
-            $user->getJWTObject()->getToken(),
-            $this->createBlacklistExpiry($user->getJWTObject()->getExpiresAt())
-        );
-
-        return $this->createToken($user);
+        return $this->createJwtObject($user, $user->getUsedJWTRefreshToken());
     }
 
     /**
-     * @param string                $token
-     * @param UsersServiceInterface $usersService
+     * @param string                            $token
+     * @param UsersServiceInterface             $usersService
      *
      * @return JWTAuthenticatable|null
      */
     public function getAuthenticatedUser(string $token, UsersServiceInterface $usersService): ?JWTAuthenticatable
     {
-        if (!empty(Cache::get(\md5($token)))) {
-            return null;
-        }
-
         try {
             $claims = JWT::decode($token, $this->getSecret(), $this->getAllowedAlgos());
+
+            if (empty($claims->{self::PAYLOAD_PARAMETER_SUBJECT})) {
+                return null;
+            }
+
+            try {
+                return $usersService->getUser($claims->{self::PAYLOAD_PARAMETER_SUBJECT})
+                    ->setUsedJWTRefreshToken($this->getRefreshJwt($token));
+            } catch (ModelNotFoundException $e) {
+                return null;
+            }
+        } catch (ExpiredException $e) {
+            $refreshJwt = $this->getRefreshJwt($token);
+
+            if (!$refreshJwt) {
+                return null;
+            }
+
+            $user = $this->getLoginRefreshTokenService()->useLoginRefreshToken($refreshJwt);
+            if (!$user) {
+                return null;
+            }
+
+            return $user->setUsedJWTRefreshToken($this->createRefreshJwt($user));
         } catch (\UnexpectedValueException $e) {
-            return null;
-        }
-
-        if (empty($claims->{self::PAYLOAD_PARAMETER_SUBJECT})) {
-            return null;
-        }
-
-        try {
-            return $usersService->getUser($claims->{self::PAYLOAD_PARAMETER_SUBJECT})
-                ->setJWTObject(new JWTObject(
-                    $token,
-                    (new \DateTime())->setTimestamp($claims->{self::PAYLOAD_PARAMETER_EXPIRES_AT})
-                ));
-        } catch (ModelNotFoundException $e) {
             return null;
         }
     }
@@ -171,22 +185,14 @@ class JWTService implements JWTServiceInterface
      * @param JWTAuthenticatable $user
      *
      * @return JWTAuthenticatable
-     *
-     * @throws AuthorizationException
      */
     public function deauthenticate(JWTAuthenticatable $user): JWTAuthenticatable
     {
-        if (!$user->getJWTObject()) {
-            throw new AuthorizationException();
+        if ($user->getUsedJWTRefreshToken()) {
+            $this->getLoginRefreshTokenService()->disableRefreshToken($user->getUsedJWTRefreshToken());
         }
 
-        Cache::add(
-            \md5($user->getJWTObject()->getToken()),
-            $user->getJWTObject()->getToken(),
-            $this->createBlacklistExpiry($user->getJWTObject()->getExpiresAt())
-        );
-
-        return $user->setJWTObject(null);
+        return $user->setUsedJWTRefreshToken(null);
     }
 
     /**
@@ -206,12 +212,41 @@ class JWTService implements JWTServiceInterface
 
     /**
      * @param JWTAuthenticatable $user
+     * @param string|null        $refreshJwt
+     *
+     * @return JWTObject
+     * @throws \Exception
+     */
+    protected function createJwtObject(JWTAuthenticatable $user, string $refreshJwt = null): JWTObject
+    {
+        list($issuedAt, $expiresAt) = $this->createTimestamps();
+
+        return new JWTObject(
+            $this->createJwt(
+                $user,
+                $issuedAt,
+                $expiresAt,
+                $refreshJwt
+            ),
+            $expiresAt,
+            $refreshJwt
+        );
+    }
+
+    /**
+     * @param JWTAuthenticatable $user
      * @param \DateTime          $issuedAt
      * @param \DateTime          $expiresAt
+     * @param string|null        $refreshToken
      *
      * @return string
      */
-    protected function createJwt(JWTAuthenticatable $user, \DateTime $issuedAt, \DateTime $expiresAt): string
+    protected function createJwt(
+        JWTAuthenticatable $user,
+        \DateTime $issuedAt,
+        \DateTime $expiresAt,
+        string $refreshToken = null
+    ): string
     {
         return JWT::encode(
             \array_merge(
@@ -221,6 +256,7 @@ class JWTService implements JWTServiceInterface
                     self::PAYLOAD_PARAMETER_EXPIRES_AT => $expiresAt->getTimestamp(),
                     self::PAYLOAD_PARAMETER_SUBJECT    => $user->getJWTIdentifier(),
                     self::PAYLOAD_PARAMETER_RANDOM     => \md5(\mt_rand() . \time()),
+                    self::PAYLOAD_PARAMETER_REFRESH    => $refreshToken,
                 ],
                 $user->getCustomClaims()
             ),
@@ -229,14 +265,34 @@ class JWTService implements JWTServiceInterface
     }
 
     /**
-     * @param \DateTime $expiresAt
+     * @param JWTAuthenticatable|UserModelInterface $user
      *
-     * @return \DateInterval
+     * @return string
      */
-    protected function createBlacklistExpiry(\DateTime $expiresAt): \DateInterval
+    protected function createRefreshJwt(JWTAuthenticatable $user): string
     {
-        return ($expiresAt && $expiresAt > new \DateTime())
-            ? (new \DateTime())->diff($expiresAt)
-            : new \DateInterval('PT0M');
+        return $this->getLoginRefreshTokenService()->createLoginRefreshToken($user)->getToken();
+    }
+
+    /**
+     * @param string $token
+     *
+     * @return string|null
+     */
+    protected function getRefreshJwt(string $token): ?string
+    {
+        $tks = explode('.', $token);
+        if (count($tks) != 3) {
+            return null;
+        }
+        list($headb64, $bodyb64) = $tks;
+        if (null === ($header = JWT::jsonDecode(JWT::urlsafeB64Decode($headb64)))) {
+            return null;
+        }
+        if (null === $payload = JWT::jsonDecode(JWT::urlsafeB64Decode($bodyb64))) {
+            return null;
+        }
+
+        return $payload->{self::PAYLOAD_PARAMETER_REFRESH} ?? null;
     }
 }

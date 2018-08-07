@@ -4,10 +4,10 @@ use App\Models\User\UserModelInterface;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Test\ApiHelper;
 use Test\DatabaseMigrations;
+use Test\ModelHelper;
 use Test\ResponseHelper;
 use Test\UserHelper;
 
@@ -19,23 +19,29 @@ class AuthApiCallsTest extends TestCase
 
     use ApiHelper;
     use DatabaseMigrations;
+    use ModelHelper;
     use ResponseHelper;
     use UserHelper;
 
+    //region Test actions
+
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLogin(): void
     {
         $password = $this->getFaker()->password();
 
-        $user = $this->createUsers(1, [UserModelInterface::PROPERTY_PASSWORD => Hash::make($password)])->first();
-
         $response = $this->doApiCall(
             $this->getRouteUrl(AuthController::ROUTE_NAME_LOGIN),
             Request::METHOD_POST,
             [
-                UserModelInterface::PROPERTY_EMAIL    => $user->getEmail(),
+                UserModelInterface::PROPERTY_EMAIL    => $this->createUsers(
+                    1,
+                    [UserModelInterface::PROPERTY_PASSWORD => Hash::make($password)]
+                )->first()->getEmail(),
                 UserModelInterface::PROPERTY_PASSWORD => $password,
             ]
         );
@@ -46,6 +52,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLoginWithoutCredentials(): void
     {
@@ -68,6 +76,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLoginWithInvalidEmail(): void
     {
@@ -86,6 +96,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLoginWithInvalidPassword(): void
     {
@@ -104,6 +116,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLogout(): void
     {
@@ -118,11 +132,12 @@ class AuthApiCallsTest extends TestCase
 
         $this->assertResponseStatus(Response::HTTP_NO_CONTENT);
         $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
-        $this->assertNotEmpty(Cache::get(\md5($cookie->getValue())));
     }
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testLogoutWithoutAuthenticatedUser(): void
     {
@@ -137,6 +152,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testAuthenticatedUser(): void
     {
@@ -159,6 +176,8 @@ class AuthApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testAuthenticatedUserWithoutUser(): void
     {
@@ -170,4 +189,6 @@ class AuthApiCallsTest extends TestCase
         $this->assertResponseStatus(Response::HTTP_UNAUTHORIZED);
         $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
     }
+
+    //endregion
 }
