@@ -4,7 +4,6 @@ use App\Models\User\UserModelInterface;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Test\ApiHelper;
 use Test\DatabaseMigrations;
@@ -23,6 +22,8 @@ class AuthApiCallsTest extends TestCase
     use ModelHelper;
     use ResponseHelper;
     use UserHelper;
+
+    //region Test actions
 
     /**
      * @return void
@@ -189,5 +190,5 @@ class AuthApiCallsTest extends TestCase
         $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
     }
 
-    //TODO test with refresh token
+    //endregion
 }

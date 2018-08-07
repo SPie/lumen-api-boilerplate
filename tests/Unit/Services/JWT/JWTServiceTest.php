@@ -1,10 +1,6 @@
 <?php
 
 use App\Services\Auth\LoginRefreshTokenServiceInterface;
-use App\Services\JWT\JWTService;
-use App\Services\JWT\JWTServiceInterface;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Cache;
 use Test\AuthHelper;
 use Test\DatabaseMigrations;
 use Test\ModelHelper;
