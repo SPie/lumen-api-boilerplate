@@ -1,7 +1,6 @@
 <?php
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User\UserModelInterface;
-use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +21,8 @@ class AuthApiCallsTest extends TestCase
     use ModelHelper;
     use ResponseHelper;
     use UserHelper;
+
+    const BEARER_AUTHORIZATION = 'Authorization';
 
     //region Test actions
 
@@ -47,7 +48,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_NO_CONTENT);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
@@ -63,7 +64,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -91,7 +92,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNAUTHORIZED);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
@@ -111,7 +112,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNAUTHORIZED);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
@@ -121,17 +122,16 @@ class AuthApiCallsTest extends TestCase
      */
     public function testLogout(): void
     {
-        $cookie = $this->createAuthCookie($this->createUsers()->first());
-
         $response = $this->doApiCall(
             $this->getRouteUrl(AuthController::ROUTE_NAME_LOGOUT),
             Request::METHOD_POST,
             [],
-            $cookie
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_NO_CONTENT);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
@@ -147,7 +147,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNAUTHORIZED);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
@@ -167,7 +167,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
         $this->assertArrayHasKey(AuthController::RESPONSE_PARAMETER_USER, $responseData);
@@ -187,7 +187,7 @@ class AuthApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNAUTHORIZED);
-        $this->assertEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     //endregion

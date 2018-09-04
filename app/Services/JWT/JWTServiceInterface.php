@@ -3,6 +3,8 @@
 namespace App\Services\JWT;
 
 use App\Services\User\UsersServiceInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Interface JWTServiceInterface
@@ -11,8 +13,6 @@ use App\Services\User\UsersServiceInterface;
  */
 interface JWTServiceInterface
 {
-
-    const AUTHORIZATION_BEARER = 'authorization';
 
     /**
      * @param JWTAuthenticatable $user
@@ -42,4 +42,19 @@ interface JWTServiceInterface
      * @return JWTAuthenticatable
      */
     public function deauthenticate(JWTAuthenticatable $user): JWTAuthenticatable;
+
+    /**
+     * @param Request $request
+     *
+     * @return string
+     */
+    public function handleRequest(Request $request): string;
+
+    /**
+     * @param JsonResponse  $response
+     * @param JWTObject $jwTObject
+     *
+     * @return JsonResponse
+     */
+    public function response(JsonResponse $response, JWTObject $jwTObject): JsonResponse;
 }

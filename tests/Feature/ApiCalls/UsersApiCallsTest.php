@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\User\UsersController;
 use App\Models\User\UserModelInterface;
+use App\Services\JWT\TokenProviderInterface;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,7 +38,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -65,7 +66,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -91,7 +92,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -116,7 +117,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_CREATED);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -141,7 +142,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -166,7 +167,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -191,7 +192,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -227,7 +228,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -259,7 +260,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -291,7 +292,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
     }
 
     /**
@@ -317,7 +318,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -349,7 +350,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -379,7 +380,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $responseData = $response->getData(true);
 
@@ -407,7 +408,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_NO_CONTENT);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
 
         $this->assertEmpty($this->getUserRepository()->find($userId));
     }
@@ -430,7 +431,7 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
     }
 
     /**
@@ -453,6 +454,6 @@ class UsersApiCallsTest extends TestCase
         );
 
         $this->assertResponseStatus(Response::HTTP_FORBIDDEN);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getCookieValue($response, TokenProviderInterface::CONFIG_BEARER));
     }
 }

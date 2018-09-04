@@ -1,6 +1,8 @@
 <?php
 
 use App\Services\Auth\LoginRefreshTokenServiceInterface;
+use App\Services\JWT\Response\CookieTokenProvider;
+use App\Services\JWT\TokenProviderInterface;
 use Test\AuthHelper;
 use Test\DatabaseMigrations;
 use Test\ModelHelper;
@@ -187,6 +189,7 @@ class JWTServiceTest extends TestCase
     {
         return new TestJWTService(
             $this->app->get(LoginRefreshTokenServiceInterface::class),
+            new CookieTokenProvider([TokenProviderInterface::CONFIG_BEARER => 'Authorization']),
             $issuer ?: $this->getFaker()->uuid,
             $secret ?: $this->getFaker()->password(),
             $expiryHours
