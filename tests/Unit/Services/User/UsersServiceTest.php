@@ -9,7 +9,7 @@ use App\Services\User\UsersServiceInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
-use Test\DatabaseMigrations;
+use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\ModelHelper;
 use Test\UserHelper;
 
@@ -27,6 +27,8 @@ class UsersServiceTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws ModelNotFoundException
      */
     public function testGetUser(): void
     {

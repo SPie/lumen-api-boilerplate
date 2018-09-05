@@ -4,8 +4,8 @@ use App\Exceptions\InvalidParameterException;
 use App\Models\User\UserModelFactoryInterface;
 use App\Models\User\UserModelInterface;
 use Illuminate\Support\Facades\Hash;
+use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\AuthHelper;
-use Test\DatabaseMigrations;
 use Test\ModelHelper;
 use Test\UserHelper;
 
