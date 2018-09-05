@@ -1,12 +1,10 @@
 <?php
 use App\Http\Controllers\User\UsersController;
 use App\Models\User\UserModelInterface;
-use App\Services\JWT\TokenProviderInterface;
-use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\ApiHelper;
-use Test\DatabaseMigrations;
 use Test\ModelHelper;
 use Test\ResponseHelper;
 use Test\UserHelper;

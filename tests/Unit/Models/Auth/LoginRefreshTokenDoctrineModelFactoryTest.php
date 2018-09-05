@@ -3,8 +3,8 @@
 use App\Exceptions\InvalidParameterException;
 use App\Models\Auth\LoginRefreshTokenModelFactoryInterface;
 use App\Models\Auth\LoginRefreshTokenModelInterface;
+use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\AuthHelper;
-use Test\DatabaseMigrations;
 use Test\ModelHelper;
 use Test\UserHelper;
 
