@@ -60,10 +60,6 @@ class AuthenticateAndRefresh extends Authenticate
 
         $jwtObject = $this->getJwtService()->refreshAuthToken($this->getAuth()->guard($guard)->user());
 
-        return $response->withCookie(new Cookie(
-            JWTServiceInterface::AUTHORIZATION_BEARER,
-            $jwtObject->getToken(),
-            $jwtObject->getExpiresAt()
-        ));
+        return $this->getJwtService()->response($response, $jwtObject);
     }
 }

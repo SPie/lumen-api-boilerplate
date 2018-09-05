@@ -94,8 +94,11 @@ class AppServiceProvider extends ServiceProvider
     private function registerServices()
     {
         $this->app->singleton(JWTServiceInterface::class, function () {
+            $responseProviderClass = $this->app['config']['services.jwt.responseProvider.class'];
+
             return new JWTService(
                 $this->app->get(LoginRefreshTokenServiceInterface::class),
+                new $responseProviderClass($this->app['config']['services.jwt.responseProvider.config']),
                 $this->app['config']['services.jwt.issuer'],
                 $this->app['config']['services.jwt.secret'],
                 $this->app['config']['services.jwt.expiryHours']

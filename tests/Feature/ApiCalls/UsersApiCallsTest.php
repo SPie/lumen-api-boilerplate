@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\User\UsersController;
 use App\Models\User\UserModelInterface;
+use App\Services\JWT\TokenProviderInterface;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,8 +23,12 @@ class UsersApiCallsTest extends TestCase
     use ResponseHelper;
     use UserHelper;
 
+    const BEARER_AUTHORIZATION = 'Authorization';
+
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testListUsers(): void
     {
@@ -33,11 +38,12 @@ class UsersApiCallsTest extends TestCase
             $this->getRouteUrl(UsersController::ROUTE_NAME_LIST),
             Request::METHOD_GET,
             [],
-            $this->createAuthCookie($users->first())
+            null,
+            $this->createAuthHeader($users->first())
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -47,6 +53,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testUserDetails(): void
     {
@@ -61,11 +69,12 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_GET,
             [],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -75,6 +84,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testUserDetailsWithInvalidUserId(): void
     {
@@ -87,11 +98,12 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_GET,
             [],
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -100,6 +112,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testCreateUser(): void
     {
@@ -112,11 +126,12 @@ class UsersApiCallsTest extends TestCase
             $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             $userData,
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_CREATED);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -130,6 +145,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testCreateUserWithoutRequiredData(): void
     {
@@ -137,11 +154,12 @@ class UsersApiCallsTest extends TestCase
             $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             [],
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -153,6 +171,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testCreateUserWithInvalidEmail(): void
     {
@@ -162,11 +182,12 @@ class UsersApiCallsTest extends TestCase
             [
                 UserModelInterface::PROPERTY_EMAIL => $this->getFaker()->word,
             ],
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -176,6 +197,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testCreateUserWithDuplicatedEmail(): void
     {
@@ -187,11 +210,12 @@ class UsersApiCallsTest extends TestCase
             [
                 UserModelInterface::PROPERTY_EMAIL => $user->getEmail(),
             ],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -201,6 +225,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUser(): void
     {
@@ -223,11 +249,12 @@ class UsersApiCallsTest extends TestCase
                 UserModelInterface::PROPERTY_EMAIL    => $user->getEmail(),
                 UserModelInterface::PROPERTY_PASSWORD => $password,
             ],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -241,6 +268,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUserWithoutChanges(): void
     {
@@ -255,11 +284,12 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_PUT,
             [],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseOk();
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -273,6 +303,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUserWithInvalidUser(): void
     {
@@ -287,15 +319,18 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_PUT,
             [],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUserWithEmptyData(): void
     {
@@ -313,11 +348,12 @@ class UsersApiCallsTest extends TestCase
                 UserModelInterface::PROPERTY_EMAIL    => '',
                 UserModelInterface::PROPERTY_PASSWORD => '',
             ],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -329,6 +365,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUserWithInvalidEmail(): void
     {
@@ -345,11 +383,12 @@ class UsersApiCallsTest extends TestCase
             [
                 UserModelInterface::PROPERTY_EMAIL => $this->getFaker()->word,
             ],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -359,6 +398,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testEditUserWithDuplicatedEmail(): void
     {
@@ -375,11 +416,12 @@ class UsersApiCallsTest extends TestCase
             [
                 UserModelInterface::PROPERTY_EMAIL => $this->createUsers()->first()->getEmail(),
             ],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $responseData = $response->getData(true);
 
@@ -389,6 +431,8 @@ class UsersApiCallsTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testDeleteUser(): void
     {
@@ -403,17 +447,20 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_DELETE,
             [],
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_NO_CONTENT);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
 
         $this->assertEmpty($this->getUserRepository()->find($userId));
     }
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testDeleteWithInvalidUserId(): void
     {
@@ -426,15 +473,18 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_DELETE,
             [],
-            $this->createAuthCookie($this->createUsers()->first())
+            null,
+            $this->createAuthHeader($this->createUsers()->first())
         );
 
         $this->assertResponseStatus(Response::HTTP_NOT_FOUND);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 
     /**
      * @return void
+     *
+     * @throws Exception
      */
     public function testDeleteWithInvalidUser(): void
     {
@@ -449,10 +499,11 @@ class UsersApiCallsTest extends TestCase
             ),
             Request::METHOD_DELETE,
             [],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseStatus(Response::HTTP_FORBIDDEN);
-        $this->assertNotEmpty($this->getCookieValue($response, JWTServiceInterface::AUTHORIZATION_BEARER));
+        $this->assertNotEmpty($this->getHeaderValue($response, self::BEARER_AUTHORIZATION));
     }
 }

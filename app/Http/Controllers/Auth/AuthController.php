@@ -72,7 +72,7 @@ class AuthController extends Controller
      * @param Request               $request
      * @param UsersServiceInterface $usersService
      *
-     * @return JsonResponse
+     * @return JsonResponse|Response
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -97,11 +97,10 @@ class AuthController extends Controller
 
         $this->getGuard()->setUser($user);
 
-        return $this->createResponse([], Response::HTTP_NO_CONTENT)->withCookie(new Cookie(
-            JWTServiceInterface::AUTHORIZATION_BEARER,
-            $jwtObject->getToken(),
-            $jwtObject->getExpiresAt()
-        ));
+        return $this->getJwtService()->response(
+            $this->createResponse([], Response::HTTP_NO_CONTENT),
+            $jwtObject
+        );
     }
 
     /**

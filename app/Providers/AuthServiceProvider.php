@@ -32,12 +32,14 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->app['auth']->viaRequest('api', function (Request $request) {
-            $token = $request->cookie(JWTServiceInterface::AUTHORIZATION_BEARER);
+            $jwtService = $this->app->get(JWTServiceInterface::class);
+
+            $token = $jwtService->handleRequest($request);
             if (empty($token)) {
                 return null;
             }
 
-            return $this->app->get(JWTServiceInterface::class)->getAuthenticatedUser(
+            return $jwtService->getAuthenticatedUser(
                 $token,
                 $this->app->get(UsersServiceInterface::class)
             );

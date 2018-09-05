@@ -8,6 +8,9 @@ use App\Services\Auth\LoginRefreshTokenServiceInterface;
 use App\Services\User\UsersServiceInterface;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Class JWTService
@@ -28,6 +31,11 @@ class JWTService implements JWTServiceInterface
      * @var LoginRefreshTokenServiceInterface
      */
     private $loginRefreshTokenService;
+
+    /**
+     * @var TokenProviderInterface
+     */
+    private $jwtObjectProvider;
 
     /**
      * @var string
@@ -55,18 +63,21 @@ class JWTService implements JWTServiceInterface
      * JWTService constructor.
      *
      * @param LoginRefreshTokenServiceInterface $loginRefreshTokenService
+     * @param TokenProviderInterface            $jwtObjectProvider
      * @param string                            $issuer
      * @param string                            $secret
      * @param int                               $expiryHours
      */
     public function __construct(
         LoginRefreshTokenServiceInterface $loginRefreshTokenService,
+        TokenProviderInterface $jwtObjectProvider,
         string $issuer,
         string $secret,
         int $expiryHours = 1
     )
     {
         $this->loginRefreshTokenService = $loginRefreshTokenService;
+        $this->jwtObjectProvider = $jwtObjectProvider;
         $this->issuer = $issuer;
         $this->secret = $secret;
         $this->expiryHours = $expiryHours;
@@ -78,6 +89,14 @@ class JWTService implements JWTServiceInterface
     protected function getLoginRefreshTokenService(): LoginRefreshTokenServiceInterface
     {
         return $this->loginRefreshTokenService;
+    }
+
+    /**
+     * @return TokenProviderInterface
+     */
+    protected function getJwtObjectProvider(): TokenProviderInterface
+    {
+        return $this->jwtObjectProvider;
     }
 
     /**
@@ -193,6 +212,28 @@ class JWTService implements JWTServiceInterface
         }
 
         return $user->setUsedJWTRefreshToken(null);
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return string|null
+     */
+    public function handleRequest(Request $request): ?string
+    {
+        return $this->getJwtObjectProvider()->handleRequest($request);
+    }
+
+    /**
+     * @param JsonResponse  $response
+     * @param JWTObject $jwTObject
+     *
+     * @return JsonResponse
+     */
+    public function response(JsonResponse $response, JWTObject $jwTObject): JsonResponse
+    {
+        return $this->getJwtObjectProvider()->handleResponse($response, $jwTObject);
+
     }
 
     /**

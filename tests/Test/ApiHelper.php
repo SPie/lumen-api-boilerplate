@@ -3,10 +3,13 @@
 namespace Test;
 
 use App\Models\User\UserModelInterface;
+use App\Services\JWT\JWTObject;
+use App\Services\JWT\TokenProviderInterface;
 use App\Services\JWT\JWTServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 /**
  * Trait ApiHelper
@@ -21,6 +24,7 @@ trait ApiHelper
      * @param string      $method
      * @param array       $parameters
      * @param Cookie|null $authToken
+     * @param array       $headers
      *
      * @return JsonResponse
      */
@@ -28,7 +32,8 @@ trait ApiHelper
         string $uri,
         string $method = Request::METHOD_GET,
         array $parameters = [],
-        Cookie $authToken = null
+        Cookie $authToken = null,
+        array $headers = []
     ): JsonResponse
     {
         $cookies = [];
@@ -42,8 +47,47 @@ trait ApiHelper
             $parameters,
             $cookies,
             [],
-            $this->transformHeadersToServerVars([])
+            $this->transformHeadersToServerVars($headers)
         );
+    }
+
+    /**
+     * @param string $method
+     * @param string $uri
+     * @param array  $parameters
+     * @param array  $cookies
+     * @param array  $headers
+     *
+     * @return Request
+     */
+    protected function createRequest(
+        string $method = Request::METHOD_GET,
+        string $uri = '',
+        array $parameters = [],
+        array $cookies = [],
+        array $headers = []
+    ): Request
+    {
+        return Request::createFromBase(SymfonyRequest::create(
+            $this->prepareUrlForRequest($uri),
+            $method,
+            $parameters,
+            $cookies,
+            [],
+            $this->transformHeadersToServerVars($headers)
+        ));
+    }
+
+    /**
+     * @param UserModelInterface $user
+     *
+     * @return array
+     */
+    protected function createAuthHeader(UserModelInterface $user): array
+    {
+        return [
+            'Authorization' => $this->createJWTToken($user)->getToken(),
+        ];
     }
 
     /**
@@ -53,16 +97,39 @@ trait ApiHelper
      */
     protected function createAuthCookie(UserModelInterface $user): Cookie
     {
-        /** @var JWTServiceInterface $jwtService */
-        $jwtService = $this->app->get(JWTServiceInterface::class);
-
-        $token = $jwtService->createToken($user);
+        $token = $this->createJWTToken($user);
 
         return new Cookie(
-            JWTServiceInterface::AUTHORIZATION_BEARER,
+            TokenProviderInterface::CONFIG_BEARER,
             $token->getToken(),
             $token->getExpiresAt()
         );
+    }
+
+    /**
+     * @param string   $token
+     * @param \DateTime $expiry
+     *
+     * @return JWTObject
+     */
+    protected function createJwtObject(string $token, \DateTime $expiry = null): JWTObject
+    {
+        $expiry = $expiry ?: new \DateTime();
+
+        return new JWTObject($token, $expiry);
+    }
+
+    /**
+     * @param UserModelInterface $user
+     *
+     * @return JWTObject
+     */
+    protected function createJWTToken(UserModelInterface $user): JWTObject
+    {
+        /** @var JWTServiceInterface $jwtService */
+        $jwtService = $this->app->get(JWTServiceInterface::class);
+
+        return $jwtService->createToken($user);
     }
 
     /**
