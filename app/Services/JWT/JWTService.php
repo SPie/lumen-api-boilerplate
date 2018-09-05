@@ -217,9 +217,9 @@ class JWTService implements JWTServiceInterface
     /**
      * @param Request $request
      *
-     * @return string
+     * @return string|null
      */
-    public function handleRequest(Request $request): string
+    public function handleRequest(Request $request): ?string
     {
         return $this->getJwtObjectProvider()->handleRequest($request);
     }

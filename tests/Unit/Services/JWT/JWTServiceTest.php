@@ -2,10 +2,16 @@
 
 use App\Services\Auth\LoginRefreshTokenServiceInterface;
 use App\Services\JWT\Response\CookieTokenProvider;
+use App\Services\JWT\Response\InvalidTokenProviderConfigurationException;
 use App\Services\JWT\TokenProviderInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Cookie;
+use Test\ApiHelper;
 use Test\AuthHelper;
 use Test\DatabaseMigrations;
 use Test\ModelHelper;
+use Test\ResponseHelper;
 use Test\TestJWTService\TestJWTService;
 use Test\UserHelper;
 
@@ -15,9 +21,11 @@ use Test\UserHelper;
 class JWTServiceTest extends TestCase
 {
 
+    use ApiHelper;
     use AuthHelper;
     use DatabaseMigrations;
     use ModelHelper;
+    use ResponseHelper;
     use UserHelper;
 
     //region Tests
@@ -77,6 +85,8 @@ class JWTServiceTest extends TestCase
 
     /**
      * @return void
+     *
+     * @throws InvalidTokenProviderConfigurationException
      */
     public function testGetAuthenticatedWithInvalidToken(): void
     {
@@ -172,6 +182,65 @@ class JWTServiceTest extends TestCase
         );
     }
 
+    /**
+     * @return void
+     *
+     * @throws InvalidTokenProviderConfigurationException
+     */
+    public function testHandleRequest(): void
+    {
+        $token = $this->getFaker()->uuid;
+
+        $this->assertEquals(
+            $token,
+            $this->createJWTService()->handleRequest(
+                $this->createRequest(
+                    Request::METHOD_GET,
+                    $this->getFaker()->url,
+                    [],
+                    [
+                        $this->createTokenCookie($token)
+                    ]
+                )
+            )
+        );
+    }
+
+    /**
+     * @return void
+     *
+     * @throws InvalidTokenProviderConfigurationException
+     */
+    public function testHandleRequestWithoutToken(): void
+    {
+        $this->assertEmpty(
+            $this->createJWTService()->handleRequest(
+                $this->createRequest(
+                    Request::METHOD_GET,
+                    $this->getFaker()->url
+                )
+            )
+        );
+    }
+
+    /**
+     * @return void
+     *
+     * @throws InvalidTokenProviderConfigurationException
+     */
+    public function testResponse(): void
+    {
+        $token = $this->getFaker()->uuid;
+
+        $this->assertEquals(
+            $token,
+            $this->getCookieValue(
+                $this->createJWTService()->response(new JsonResponse(), $this->createJwtObject($token)),
+                'Authorization'
+            )
+        );
+    }
+
     //endregion
 
     /**
@@ -180,6 +249,8 @@ class JWTServiceTest extends TestCase
      * @param int         $expiryHours
      *
      * @return TestJWTService
+     *
+     * @throws \App\Services\JWT\Response\InvalidTokenProviderConfigurationException
      */
     private function createJWTService(
         string $issuer = null,
@@ -193,6 +264,24 @@ class JWTServiceTest extends TestCase
             $issuer ?: $this->getFaker()->uuid,
             $secret ?: $this->getFaker()->password(),
             $expiryHours
+        );
+    }
+
+    /**
+     * @param string        $token
+     * @param DateTime|null $expiry
+     * @param string        $bearer
+     *
+     * @return Cookie
+     */
+    private function createTokenCookie(string $token, \DateTime $expiry = null, string $bearer = 'Authorization'): Cookie
+    {
+        $expiry = $expiry ?: new \DateTime();
+
+        return new Cookie(
+            $bearer,
+            $token,
+            $expiry
         );
     }
 }

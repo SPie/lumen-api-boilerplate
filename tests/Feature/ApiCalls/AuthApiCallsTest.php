@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User\UserModelInterface;
 use Illuminate\Http\Request;
@@ -163,7 +164,8 @@ class AuthApiCallsTest extends TestCase
             $this->getRouteUrl(AuthController::ROUTE_NAME_USER),
             Request::METHOD_GET,
             [],
-            $this->createAuthCookie($user)
+            null,
+            $this->createAuthHeader($user)
         );
 
         $this->assertResponseOk();
