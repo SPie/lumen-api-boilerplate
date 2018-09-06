@@ -36,6 +36,7 @@ $app->configure('cache');
 $app->configure('database');
 $app->configure('doctrine');
 $app->configure('services');
+$app->configure('middlewares');
 
 /*
 |--------------------------------------------------------------------------
@@ -70,8 +71,9 @@ $app->singleton(
 */
 
 $app->routeMiddleware([
-    'auth'    => App\Http\Middleware\Authenticate::class,
-    'refresh' => App\Http\Middleware\AuthenticateAndRefresh::class,
+    'auth'      => App\Http\Middleware\Authenticate::class,
+    'refresh'   => App\Http\Middleware\AuthenticateAndRefresh::class,
+    'signature' => App\Http\Middleware\ApiSignature::class,
 ]);
 
 /*
