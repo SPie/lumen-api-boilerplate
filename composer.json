@@ -12,7 +12,8 @@
         "laravel-doctrine/extensions": "^1.0",
         "laravel-doctrine/migrations": "^1.1",
         "gedmo/doctrine-extensions": "^2.4",
-        "firebase/php-jwt": "^5.0"
+        "firebase/php-jwt": "^5.0",
+        "ext-json": "^1.5"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

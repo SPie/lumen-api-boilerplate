@@ -18,68 +18,76 @@ use Laravel\Lumen\Routing\Router;
 |
 */
 
-$router->group(['prefix' => 'api',], function (Router $router) {
-
-    //region Auth calls
-
-    $router->group(['prefix' => 'auth'], function (Router $router) {
-
-        $router->get(
-            'user',
-            [
-                'as'         => AuthController::ROUTE_NAME_USER,
-                'uses'       => 'Auth\AuthController@authenticatedUser',
-                'middleware' => ['refresh'],
-            ]
-        );
-        $router->post(
-            'logout',
-            [
-                'as'         => AuthController::ROUTE_NAME_LOGOUT,
-                'uses'       => 'Auth\AuthController@logout',
-                'middleware' => ['auth'],
-            ]
-        );
-        $router->post('login', ['as' => AuthController::ROUTE_NAME_LOGIN, 'uses' => 'Auth\AuthController@login']);
-    });
-
-    //endregion
-
-    //region Users calls
-
-    $router->group(
-        [
-            'prefix'     => 'users',
-            'middleware' => ['refresh'],
+$router->group(
+    [
+        'prefix'     => 'api',
+        'middleware' => [
+            'signature',
         ],
-        function (Router $router) {
+    ],
+    function (Router $router) {
 
-            $router->get('', ['as' => UsersController::ROUTE_NAME_LIST, 'uses' => 'User\UsersController@listUsers']);
-            $router->post('', ['as' => UsersController::ROUTE_NAME_CREATE, 'uses' => 'User\UsersController@createUser']);
+        //region Auth calls
+
+        $router->group(['prefix' => 'auth'], function (Router $router) {
+
             $router->get(
-                '{userId}',
+                'user',
                 [
-                    'as' => UsersController::ROUTE_NAME_DETAILS,
-                    'uses' => 'User\UsersController@userDetails'
+                    'as'         => AuthController::ROUTE_NAME_USER,
+                    'uses'       => 'Auth\AuthController@authenticatedUser',
+                    'middleware' => ['refresh'],
                 ]
             );
-            $router->put(
-                '{userId}',
+            $router->post(
+                'logout',
                 [
-                    'as' => UsersController::ROUTE_NAME_EDIT,
-                    'uses' => 'User\UsersController@editUser'
+                    'as'         => AuthController::ROUTE_NAME_LOGOUT,
+                    'uses'       => 'Auth\AuthController@logout',
+                    'middleware' => ['auth'],
                 ]
             );
-            $router->delete(
-                '{userId}',
-                [
-                    'as' => UsersController::ROUTE_NAME_DELETE,
-                    'uses' => 'User\UsersController@deleteUser'
-                ]
-            );
-        }
-    );
+            $router->post('login', ['as' => AuthController::ROUTE_NAME_LOGIN, 'uses' => 'Auth\AuthController@login']);
+        });
 
-    //endregion
+        //endregion
 
-});
+        //region Users calls
+
+        $router->group(
+            [
+                'prefix'     => 'users',
+                'middleware' => ['refresh'],
+            ],
+            function (Router $router) {
+
+                $router->get('', ['as' => UsersController::ROUTE_NAME_LIST, 'uses' => 'User\UsersController@listUsers']);
+                $router->post('', ['as' => UsersController::ROUTE_NAME_CREATE, 'uses' => 'User\UsersController@createUser']);
+                $router->get(
+                    '{userId}',
+                    [
+                        'as' => UsersController::ROUTE_NAME_DETAILS,
+                        'uses' => 'User\UsersController@userDetails'
+                    ]
+                );
+                $router->put(
+                    '{userId}',
+                    [
+                        'as' => UsersController::ROUTE_NAME_EDIT,
+                        'uses' => 'User\UsersController@editUser'
+                    ]
+                );
+                $router->delete(
+                    '{userId}',
+                    [
+                        'as' => UsersController::ROUTE_NAME_DELETE,
+                        'uses' => 'User\UsersController@deleteUser'
+                    ]
+                );
+            }
+        );
+
+        //endregion
+
+    }
+);

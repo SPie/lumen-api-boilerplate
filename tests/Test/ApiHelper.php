@@ -2,6 +2,7 @@
 
 namespace Test;
 
+use App\Http\Middleware\ApiSignature;
 use App\Models\User\UserModelInterface;
 use App\Services\JWT\JWTObject;
 use App\Services\JWT\TokenProviderInterface;
@@ -41,14 +42,39 @@ trait ApiHelper
             $cookies[$authToken->getName()] = $authToken->getValue();
         }
 
+        $timestamp = (new \DateTime())->getTimestamp();
+
         return $this->call(
             $method,
             $uri,
             $parameters,
             $cookies,
             [],
-            $this->transformHeadersToServerVars($headers)
+            $this->transformHeadersToServerVars(
+                \array_merge(
+                    [
+                        ApiSignature::HEADER_SIGNATURE => $this->createSignature($timestamp, $parameters),
+                        ApiSignature::HEADER_TIMESTAMP => $timestamp,
+                    ],
+                    $headers
+                )
+            )
         );
+    }
+
+    /**
+     * @param string $timestamp
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function createSignature(string $timestamp, array $parameters): string
+    {
+        return \base64_encode(\hash_hmac(
+            ApiSignature::ALGORITHM_SHA_512,
+            $timestamp . \json_encode($parameters),
+            $this->app['config']['middlewares.apiSignature.secret']
+        ));
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\ApiSignature;
 use App\Models\Auth\LoginRefreshTokenDoctrineModel;
 use App\Models\Auth\LoginRefreshTokenDoctrineModelFactory;
 use App\Models\Auth\LoginRefreshTokenModelFactoryInterface;
@@ -42,7 +43,8 @@ class AppServiceProvider extends ServiceProvider
             ->registerModels()
             ->registerRepositories()
             ->registerModelFactories()
-            ->registerServices();
+            ->registerServices()
+            ->registerMiddlewares();
     }
 
     /**
@@ -107,6 +109,22 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(UsersServiceInterface::class, UsersService::class);
         $this->app->singleton(LoginRefreshTokenServiceInterface::class, LoginRefreshTokenService::class);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    private function registerMiddlewares()
+    {
+        $this->app->bind(ApiSignature::class, function () {
+            return new ApiSignature(
+                $this->app['config']['middlewares.apiSignature.secret'],
+                $this->app['config']['middlewares.apiSignature.algorithm'],
+                $this->app['config']['middlewares.apiSignature.toleranceSeconds']
+            );
+        });
 
         return $this;
     }
