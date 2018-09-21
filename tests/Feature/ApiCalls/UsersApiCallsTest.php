@@ -3,6 +3,7 @@ use App\Http\Controllers\User\UsersController;
 use App\Models\User\UserModelInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\URL;
 use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\ApiHelper;
 use Test\ModelHelper;
@@ -33,7 +34,7 @@ class UsersApiCallsTest extends TestCase
         $users = $this->createUsers($this->getFaker()->numberBetween(1, 5));
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(UsersController::ROUTE_NAME_LIST),
+            URL::route(UsersController::ROUTE_NAME_LIST),
             Request::METHOD_GET,
             [],
             null,
@@ -59,7 +60,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_DETAILS,
                 [
                     'userId' => $user->getId(),
@@ -88,7 +89,7 @@ class UsersApiCallsTest extends TestCase
     public function testUserDetailsWithInvalidUserId(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_DETAILS,
                 [
                     'userId' => $this->getFaker()->numberBetween(),
@@ -121,7 +122,7 @@ class UsersApiCallsTest extends TestCase
         ];
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
+            URL::route(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             $userData,
             null,
@@ -149,7 +150,7 @@ class UsersApiCallsTest extends TestCase
     public function testCreateUserWithoutRequiredData(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
+            URL::route(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             [],
             null,
@@ -175,7 +176,7 @@ class UsersApiCallsTest extends TestCase
     public function testCreateUserWithInvalidEmail(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
+            URL::route(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             [
                 UserModelInterface::PROPERTY_EMAIL => $this->getFaker()->word,
@@ -203,7 +204,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(UsersController::ROUTE_NAME_CREATE),
+            URL::route(UsersController::ROUTE_NAME_CREATE),
             Request::METHOD_POST,
             [
                 UserModelInterface::PROPERTY_EMAIL => $user->getEmail(),
@@ -236,7 +237,7 @@ class UsersApiCallsTest extends TestCase
             ->setPassword($password);
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $user->getId(),
@@ -274,7 +275,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $user->getId(),
@@ -309,7 +310,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $this->getFaker()->numberBetween(),
@@ -335,7 +336,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $user->getId(),
@@ -371,7 +372,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $user->getId(),
@@ -404,7 +405,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_EDIT,
                 [
                     'userId' => $user->getId(),
@@ -437,7 +438,7 @@ class UsersApiCallsTest extends TestCase
         $userId = $this->createUsers()->first()->getId();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_DELETE,
                 [
                     'userId' => $userId,
@@ -463,7 +464,7 @@ class UsersApiCallsTest extends TestCase
     public function testDeleteWithInvalidUserId(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_DELETE,
                 [
                     'userId' => $this->getFaker()->numberBetween(2),
@@ -489,7 +490,7 @@ class UsersApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(
+            URL::route(
                 UsersController::ROUTE_NAME_DELETE,
                 [
                     'userId' => $user->getId(),

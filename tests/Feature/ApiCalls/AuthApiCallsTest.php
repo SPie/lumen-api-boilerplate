@@ -5,6 +5,7 @@ use App\Models\User\UserModelInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use LaravelDoctrine\Migrations\Testing\DatabaseMigrations;
 use Test\ApiHelper;
 use Test\ModelHelper;
@@ -37,7 +38,7 @@ class AuthApiCallsTest extends TestCase
         $password = $this->getFaker()->password();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGIN),
+            URL::route(AuthController::ROUTE_NAME_LOGIN),
             Request::METHOD_POST,
             [
                 UserModelInterface::PROPERTY_EMAIL    => $this->createUsers(
@@ -60,7 +61,7 @@ class AuthApiCallsTest extends TestCase
     public function testLoginWithoutCredentials(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGIN),
+            URL::route(AuthController::ROUTE_NAME_LOGIN),
             Request::METHOD_POST
         );
 
@@ -84,7 +85,7 @@ class AuthApiCallsTest extends TestCase
     public function testLoginWithInvalidEmail(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGIN),
+            URL::route(AuthController::ROUTE_NAME_LOGIN),
             Request::METHOD_POST,
             [
                 UserModelInterface::PROPERTY_EMAIL    => $this->getFaker()->safeEmail,
@@ -104,7 +105,7 @@ class AuthApiCallsTest extends TestCase
     public function testLoginWithInvalidPassword(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGIN),
+            URL::route(AuthController::ROUTE_NAME_LOGIN),
             Request::METHOD_POST,
             [
                 UserModelInterface::PROPERTY_EMAIL    => $this->createUsers()->first()->getEmail(),
@@ -124,7 +125,7 @@ class AuthApiCallsTest extends TestCase
     public function testLogout(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGOUT),
+            URL::route(AuthController::ROUTE_NAME_LOGOUT),
             Request::METHOD_POST,
             [],
             null,
@@ -143,7 +144,7 @@ class AuthApiCallsTest extends TestCase
     public function testLogoutWithoutAuthenticatedUser(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_LOGOUT),
+            URL::route(AuthController::ROUTE_NAME_LOGOUT),
             Request::METHOD_POST
         );
 
@@ -161,7 +162,7 @@ class AuthApiCallsTest extends TestCase
         $user = $this->createUsers()->first();
 
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_USER),
+            URL::route(AuthController::ROUTE_NAME_USER),
             Request::METHOD_GET,
             [],
             null,
@@ -184,7 +185,7 @@ class AuthApiCallsTest extends TestCase
     public function testAuthenticatedUserWithoutUser(): void
     {
         $response = $this->doApiCall(
-            $this->getRouteUrl(AuthController::ROUTE_NAME_USER),
+            URL::route(AuthController::ROUTE_NAME_USER),
             Request::METHOD_GET
         );
 
